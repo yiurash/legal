@@ -1,23 +1,33 @@
 package com.feldsher.ai.tools;
 
 import com.feldsher.common.context.DialogueContext;
-import com.feldsher.common.enums.CaseTypeEnum;
+import com.feldsher.ai.service.PromptProvider;
+import com.feldsher.ai.service.RealTimeStreamingService;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class SkillSelectorTool {
+
+    private static final String PROMPT_KEY = "tools/skill_classifier";
+
+    private final RealTimeStreamingService realTimeStreamingService;
+    private final PromptProvider promptProvider;
 
     private DialogueContext currentContext;
 
@@ -115,15 +125,20 @@ public class SkillSelectorTool {
                 log.warn("检测到无意义输入或非法律问题: {}", userQuestion);
                 return result;
             }
-            
-            result.addPossibleSkill(PossibleSkill.builder()
-                    .caseType("其他")
-                    .caseTypeCode("other")
-                    .skillName("通用法律Skill")
-                    .skillCode("general")
-                    .confidence(0.5)
-                    .reason("无法识别具体案由，使用通用法律Skill")
-                    .build());
+
+            PossibleSkill llmSkill = llmClassify(userQuestion, contextInfo);
+            if (llmSkill != null) {
+                result.addPossibleSkill(llmSkill);
+            } else {
+                result.addPossibleSkill(PossibleSkill.builder()
+                        .caseType("其他")
+                        .caseTypeCode("other")
+                        .skillName("通用法律Skill")
+                        .skillCode("general")
+                        .confidence(0.5)
+                        .reason("无法识别具体案由，使用通用法律Skill")
+                        .build());
+            }
         }
 
         if (currentContext != null && !result.getPossibleSkills().isEmpty()) {
@@ -165,6 +180,91 @@ public class SkillSelectorTool {
         }
         
         return false;
+    }
+
+    private PossibleSkill llmClassify(String userQuestion, String contextInfo) {
+        String systemPrompt = promptProvider.getPrompt(PROMPT_KEY, defaultPrompt());
+
+        String userPrompt = "用户问题: " + userQuestion + "\n上下文: " + (contextInfo == null ? "" : contextInfo);
+        long start = System.currentTimeMillis();
+        RealTimeStreamingService.StreamingResult llmResult = realTimeStreamingService.chatSync(systemPrompt, userPrompt);
+        long duration = System.currentTimeMillis() - start;
+        int outputLen = llmResult != null && llmResult.getResponseContent() != null ? llmResult.getResponseContent().length() : 0;
+        log.info("LLM分类调用完成。prompt_key={}, duration_ms={}, output_len={}", PROMPT_KEY, duration, outputLen);
+        if (llmResult == null || !llmResult.isSuccess()) {
+            log.warn("LLM分类调用失败，返回null。prompt_key={}", PROMPT_KEY);
+            return null;
+        }
+
+        String jsonText = extractJson(llmResult.getResponseContent());
+        if (jsonText == null) {
+            return null;
+        }
+
+        try {
+            JSONObject json = JSON.parseObject(jsonText);
+            String caseTypeCode = json.getString("caseTypeCode");
+            if (!isSupportedOrOther(caseTypeCode)) {
+                caseTypeCode = "other";
+            }
+            Double confidence = json.getDouble("confidence");
+            if (confidence == null) {
+                confidence = "other".equals(caseTypeCode) ? 0.6 : 0.75;
+            }
+            String caseType = caseTypeName(caseTypeCode);
+            String reason = json.getString("reason");
+            if (reason == null || reason.isBlank()) {
+                reason = "LLM分类结果";
+            }
+
+            return PossibleSkill.builder()
+                    .caseType(caseType)
+                    .caseTypeCode(caseTypeCode)
+                    .skillName("other".equals(caseTypeCode) ? "通用法律Skill" : caseType + "Skill")
+                    .skillCode("other".equals(caseTypeCode) ? "general" : caseTypeCode)
+                    .confidence(confidence)
+                    .reason(reason)
+                    .build();
+        } catch (Exception e) {
+            log.warn("LLM分类解析失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private String defaultPrompt() {
+        return """
+返回JSON: {"caseTypeCode":"other","confidence":0.5,"reason":"fallback"}。
+""";
+    }
+
+    private boolean isSupportedOrOther(String code) {
+        return "marriage_family".equals(code)
+                || "labor_dispute".equals(code)
+                || "criminal_procedure".equals(code)
+                || "contract_dispute".equals(code)
+                || "other".equals(code);
+    }
+
+    private String caseTypeName(String code) {
+        return switch (code) {
+            case "marriage_family" -> "婚姻家事";
+            case "labor_dispute" -> "劳务纠纷";
+            case "criminal_procedure" -> "刑事诉讼";
+            case "contract_dispute" -> "合同纠纷";
+            default -> "其他";
+        };
+    }
+
+    private String extractJson(String text) {
+        if (text == null) {
+            return null;
+        }
+        int start = text.indexOf("{");
+        int end = text.lastIndexOf("}");
+        if (start >= 0 && end > start) {
+            return text.substring(start, end + 1);
+        }
+        return null;
     }
 
     private boolean hasLegalKeywords(String input) {

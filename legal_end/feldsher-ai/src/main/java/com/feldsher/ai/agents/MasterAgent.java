@@ -1,6 +1,7 @@
 package com.feldsher.ai.agents;
 
 import com.alibaba.fastjson2.JSON;
+import com.feldsher.ai.service.ConclusionGenerationService;
 import com.feldsher.ai.skills.LegalSkill;
 import com.feldsher.ai.skills.SkillRegistry;
 import com.feldsher.ai.tools.SkillSelectorTool;
@@ -28,6 +29,7 @@ public class MasterAgent implements LegalAgent {
     private final FactCollectionAgent factCollectionAgent;
     private final LawRetrievalAgent lawRetrievalAgent;
     private final CaseRetrievalAgent caseRetrievalAgent;
+    private final ConclusionGenerationService conclusionGenerationService;
 
     @Override
     public String getAgentCode() {
@@ -192,15 +194,7 @@ public class MasterAgent implements LegalAgent {
 
                 context.setCurrentStatus(DialogueStatusEnum.CONCLUDING.getCode());
 
-                String caseAnalysis = generateCaseAnalysis(context);
-
-                var conclusion = com.feldsher.common.vo.DialogueResponseVO.FinalConclusion.builder()
-                        .caseAnalysis(caseAnalysis)
-                        .lawResults(lawResults)
-                        .caseResults(caseResults)
-                        .summary(generateSummary(context))
-                        .nextSteps(generateNextSteps(context))
-                        .build();
+                var conclusion = conclusionGenerationService.generateConclusion(context, lawResults, caseResults);
 
                 return MasterAgentResult.builder()
                         .success(true)
@@ -244,55 +238,6 @@ public class MasterAgent implements LegalAgent {
 
     private MasterAgentResult handleDefault(DialogueContext context, String userInput) {
         return handleInitialInput(context, userInput);
-    }
-
-    private String generateCaseAnalysis(DialogueContext context) {
-        var caseFacts = context.getCaseFacts();
-        if (caseFacts == null) {
-            return "根据您描述的情况，我为您进行以下法律分析：";
-        }
-
-        return String.format("根据您提供的信息，这是一个%s类案件。\n\n" +
-                "【案情概述】\n" +
-                "%s\n\n" +
-                "【法律分析要点】\n" +
-                "1. 首先，需要确认案件的法律关系性质和适用的法律规范；\n" +
-                "2. 其次，需要分析各方的权利义务和可能的法律后果；\n" +
-                "3. 最后，根据相关法律法规和类似案例，给出初步的法律建议。",
-                caseFacts.getCaseType(),
-                caseFacts.getSummary() != null ? caseFacts.getSummary() : caseFacts.getSupplement());
-    }
-
-    private String generateSummary(DialogueContext context) {
-        var caseFacts = context.getCaseFacts();
-        return String.format("综合以上分析，对于您咨询的%s问题，建议您：\n\n" +
-                "1. 首先收集和整理所有相关证据材料；\n" +
-                "2. 可以先尝试与对方协商解决；\n" +
-                "3. 如协商不成，可以考虑通过法律途径维护自身权益；\n" +
-                "4. 建议咨询专业律师获取更详细的法律意见。",
-                caseFacts != null ? caseFacts.getCaseType() : "法律");
-    }
-
-    private String generateNextSteps(DialogueContext context) {
-        return """
-                【下一步建议】
-                
-                1. **证据收集**：整理所有与案件相关的证据材料，包括合同、聊天记录、转账凭证、证人证言等。
-                
-                2. **法律咨询**：建议您携带相关证据材料，咨询专业律师获取详细的法律意见。
-                
-                3. **协商解决**：如果可能，可以尝试与对方进行协商，寻求和解方案。
-                
-                4. **法律途径**：如协商不成，可以考虑通过以下法律途径解决：
-                   - 向相关部门投诉举报；
-                   - 申请调解或仲裁；
-                   - 向人民法院提起诉讼。
-                
-                5. **时效注意**：注意法律规定的诉讼时效，及时主张权利。
-                
-                【重要提示】
-                以上分析仅供参考，不构成正式的法律意见。具体案件情况可能因证据、法律适用等因素而有所不同。建议您在采取任何法律行动前，咨询专业律师的意见。
-                """;
     }
 
     @lombok.Data

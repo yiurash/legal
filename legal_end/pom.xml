@@ -12,7 +12,6 @@
     <description>法律助手AI问答系统后端项目</description>
 
     <modules>
-        <module>feldsher-common</module>
         <module>feldsher-ai</module>
     </modules>
 
@@ -81,12 +80,6 @@
                 <groupId>dev.langchain4j</groupId>
                 <artifactId>langchain4j-open-ai</artifactId>
                 <version>${langchain4j.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.feldsher</groupId>
-                <artifactId>feldsher-common</artifactId>
-                <version>${project.version}</version>
             </dependency>
 
             <dependency>

@@ -1,6 +1,10 @@
 package com.feldsher.ai.tools;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+import com.feldsher.ai.service.PromptProvider;
+import com.feldsher.ai.service.RealTimeStreamingService;
 import com.feldsher.common.vo.LawRetrievalVO;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
@@ -8,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +22,13 @@ import java.util.List;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class LawSearchTool {
+
+    private static final String PROMPT_KEY = "tools/other_law_search";
+
+    private final RealTimeStreamingService realTimeStreamingService;
+    private final PromptProvider promptProvider;
 
     @Tool("根据案情事实和争议焦点，检索相关的法律法规和司法解释")
     public LawSearchResult searchLaws(
@@ -66,10 +77,61 @@ public class LawSearchTool {
                 laws = generateContractDisputeLaws(caseFacts);
                 break;
             default:
-                laws = generateGeneralLaws(caseFacts);
+                laws = generateGeneralLawsByLlm(caseFacts);
         }
 
         return laws;
+    }
+
+    private List<LawRetrievalVO> generateGeneralLawsByLlm(String caseFacts) {
+        String systemPrompt = promptProvider.getPrompt(PROMPT_KEY, defaultPrompt());
+
+        long start = System.currentTimeMillis();
+        RealTimeStreamingService.StreamingResult llmResult =
+                realTimeStreamingService.chatSync(systemPrompt, "案情事实: " + caseFacts);
+        long duration = System.currentTimeMillis() - start;
+        int outputLen = llmResult != null && llmResult.getResponseContent() != null ? llmResult.getResponseContent().length() : 0;
+        log.info("LLM法规检索完成。prompt_key={}, duration_ms={}, output_len={}", PROMPT_KEY, duration, outputLen);
+        if (llmResult == null || !llmResult.isSuccess()) {
+            log.warn("LLM法规检索失败，回退到通用模板。prompt_key={}", PROMPT_KEY);
+            return generateGeneralLaws(caseFacts);
+        }
+
+        try {
+            String jsonText = extractJson(llmResult.getResponseContent());
+            if (jsonText == null) {
+                return generateGeneralLaws(caseFacts);
+            }
+            JSONObject root = JSON.parseObject(jsonText);
+            JSONArray lawsArray = root.getJSONArray("laws");
+            if (lawsArray == null || lawsArray.isEmpty()) {
+                return generateGeneralLaws(caseFacts);
+            }
+
+            List<LawRetrievalVO> laws = new ArrayList<>();
+            for (int i = 0; i < lawsArray.size(); i++) {
+                JSONObject item = lawsArray.getJSONObject(i);
+                laws.add(LawRetrievalVO.builder()
+                        .lawId("LLM_LAW_" + (i + 1))
+                        .lawName(item.getString("lawName"))
+                        .articleNumber(item.getString("articleNumber"))
+                        .articleTitle(item.getString("articleTitle"))
+                        .content(item.getString("content"))
+                        .relevanceAnalysis(item.getString("relevanceAnalysis"))
+                        .keyPoints(item.getString("keyPoints"))
+                        .build());
+            }
+            return laws.isEmpty() ? generateGeneralLaws(caseFacts) : laws;
+        } catch (Exception e) {
+            log.warn("LLM法规检索解析失败，回退到通用模板: {}", e.getMessage());
+            return generateGeneralLaws(caseFacts);
+        }
+    }
+
+    private String defaultPrompt() {
+        return """
+返回JSON: {"laws":[{"lawName":"法律名称","articleNumber":"第X条"}]}。
+""";
     }
 
     private List<LawRetrievalVO> generateMarriageFamilyLaws(String caseFacts) {
@@ -114,6 +176,18 @@ public class LawSearchTool {
         }
 
         return laws;
+    }
+
+    private String extractJson(String text) {
+        if (text == null) {
+            return null;
+        }
+        int start = text.indexOf("{");
+        int end = text.lastIndexOf("}");
+        if (start >= 0 && end > start) {
+            return text.substring(start, end + 1);
+        }
+        return null;
     }
 
     private List<LawRetrievalVO> generateLaborDisputeLaws(String caseFacts) {

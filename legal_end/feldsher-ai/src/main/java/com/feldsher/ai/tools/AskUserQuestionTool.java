@@ -1,6 +1,10 @@
 package com.feldsher.ai.tools;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+import com.feldsher.ai.service.PromptProvider;
+import com.feldsher.ai.service.RealTimeStreamingService;
 import com.feldsher.common.context.DialogueContext;
 import com.feldsher.common.dto.QuestionFormDTO;
 import dev.langchain4j.agent.tool.P;
@@ -9,20 +13,23 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class AskUserQuestionTool {
+
+    private static final String PROMPT_KEY = "tools/other_question_generation";
+
+    private final RealTimeStreamingService realTimeStreamingService;
+    private final PromptProvider promptProvider;
 
     private DialogueContext currentContext;
 
@@ -76,7 +83,7 @@ public class AskUserQuestionTool {
                 questions = generateContractDisputeQuestions();
                 break;
             default:
-                questions = generateGeneralQuestions();
+                questions = generateGeneralQuestionsByLlm(caseTypeCode, existingInfo);
         }
 
         return QuestionFormDTO.builder()
@@ -86,6 +93,70 @@ public class AskUserQuestionTool {
                 .hasSupplement(true)
                 .supplementHint("请补充说明其他相关事实...")
                 .build();
+    }
+
+    private List<QuestionFormDTO.QuestionItem> generateGeneralQuestionsByLlm(String caseTypeCode, String existingInfo) {
+        String systemPrompt = promptProvider.getPrompt(PROMPT_KEY, defaultPrompt());
+
+        String userPrompt = "caseTypeCode=" + caseTypeCode + "\nexistingInfo=" + (existingInfo == null ? "" : existingInfo);
+        long start = System.currentTimeMillis();
+        RealTimeStreamingService.StreamingResult llmResult = realTimeStreamingService.chatSync(systemPrompt, userPrompt);
+        long duration = System.currentTimeMillis() - start;
+        int outputLen = llmResult != null && llmResult.getResponseContent() != null ? llmResult.getResponseContent().length() : 0;
+        log.info("LLM问题生成完成。prompt_key={}, duration_ms={}, output_len={}", PROMPT_KEY, duration, outputLen);
+        if (llmResult == null || !llmResult.isSuccess()) {
+            log.warn("LLM问题生成失败，回退到通用模板。prompt_key={}", PROMPT_KEY);
+            return generateGeneralQuestions();
+        }
+
+        try {
+            String jsonText = extractJson(llmResult.getResponseContent());
+            if (jsonText == null) {
+                return generateGeneralQuestions();
+            }
+            JSONObject root = JSON.parseObject(jsonText);
+            JSONArray array = root.getJSONArray("questions");
+            if (array == null || array.isEmpty()) {
+                return generateGeneralQuestions();
+            }
+
+            List<QuestionFormDTO.QuestionItem> questions = new ArrayList<>();
+            for (int i = 0; i < array.size(); i++) {
+                JSONObject q = array.getJSONObject(i);
+                String questionText = q.getString("question");
+                JSONArray optionsArray = q.getJSONArray("options");
+                if (questionText == null || questionText.isBlank() || optionsArray == null || optionsArray.isEmpty()) {
+                    continue;
+                }
+
+                List<String> options = optionsArray.toJavaList(String.class);
+                if (options.isEmpty()) {
+                    continue;
+                }
+                if (!"暂不选择".equals(options.get(options.size() - 1))) {
+                    options.add("暂不选择");
+                }
+
+                questions.add(QuestionFormDTO.QuestionItem.builder()
+                        .id("q" + (i + 1))
+                        .question(questionText)
+                        .options(options)
+                        .order(i + 1)
+                        .followUp(q.getString("followUp"))
+                        .build());
+            }
+
+            return questions.isEmpty() ? generateGeneralQuestions() : questions;
+        } catch (Exception e) {
+            log.warn("LLM动态问题生成失败，回退到通用模板: {}", e.getMessage());
+            return generateGeneralQuestions();
+        }
+    }
+
+    private String defaultPrompt() {
+        return """
+返回JSON: {"questions":[{"id":"q1","question":"请补充关键事实","options":["暂不选择"]}]}。
+""";
     }
 
     private List<QuestionFormDTO.QuestionItem> generateMarriageFamilyQuestions() {
@@ -318,6 +389,18 @@ public class AskUserQuestionTool {
             case "contract_dispute" -> "合同纠纷";
             default -> "其他";
         };
+    }
+
+    private String extractJson(String text) {
+        if (text == null) {
+            return null;
+        }
+        int start = text.indexOf("{");
+        int end = text.lastIndexOf("}");
+        if (start >= 0 && end > start) {
+            return text.substring(start, end + 1);
+        }
+        return null;
     }
 
     @Data

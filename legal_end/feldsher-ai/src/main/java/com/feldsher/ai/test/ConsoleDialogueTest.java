@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -24,7 +25,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
-// @Component 已被 LLMDialogueTest 取代，如需使用旧版请取消注释
+@Component
+@Profile("console-test")
 public class ConsoleDialogueTest implements CommandLineRunner {
 
     @Autowired
@@ -168,9 +170,10 @@ public class ConsoleDialogueTest implements CommandLineRunner {
         }
 
         System.out.println("\n\033[1;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m");
-
+        long startAt = System.currentTimeMillis();
         MasterAgent.MasterAgentResult result = dialogueService.processUserInput(
                 currentContext.getSessionId(), userInput);
+        long thinkingDurationMs = System.currentTimeMillis() - startAt;
 
         if (!result.getSuccess()) {
             System.out.println("\n\033[1;31m处理失败: " + result.getErrorMessage() + "\033[0m");
@@ -181,11 +184,7 @@ public class ConsoleDialogueTest implements CommandLineRunner {
             String thinkingContent = "检测到非法律问题，准备回复...";
             String replyContent = result.getThinkingContent();
             
-            if (useRealStreaming && realTimeStreamingService != null) {
-                streamThinkingAndReply(thinkingContent, replyContent);
-            } else {
-                simulateStreamingThinkingAndReply(thinkingContent, replyContent);
-            }
+            streamThinkingAndReply(thinkingContent, replyContent, thinkingDurationMs);
             System.out.println("\033[1;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m");
             return;
         }
@@ -197,12 +196,7 @@ public class ConsoleDialogueTest implements CommandLineRunner {
             }
             
             String assistantReply = generateAssistantReply(result.getQuestionForm());
-            
-            if (useRealStreaming && realTimeStreamingService != null) {
-                streamThinkingAndReply(thinkingContent, assistantReply);
-            } else {
-                simulateStreamingThinkingAndReply(thinkingContent, assistantReply);
-            }
+            streamThinkingAndReply(thinkingContent, assistantReply, thinkingDurationMs);
 
             System.out.println("\n\033[1;36m【问题表单】\033[0m");
             System.out.println("\033[1;36m为了给您提供更准确的法律建议，请回答以下问题：\033[0m");
@@ -223,104 +217,17 @@ public class ConsoleDialogueTest implements CommandLineRunner {
         System.out.println("\033[1;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m");
     }
 
-    private void streamThinkingAndReply(String thinkingContent, String replyContent) {
-        final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicReference<Long> thinkingStartTime = new AtomicReference<>();
-        final AtomicReference<Long> replyStartTime = new AtomicReference<>();
-
-        realTimeStreamingService.streamThinkingAndReply(thinkingContent, replyContent, 
-                new RealTimeStreamingService.SimpleStreamingCallback() {
-            
-            @Override
-            public void onThinkingStart() {
-                System.out.print("\033[1;90m🤔 深度思考中... \033[0m");
-                thinkingStartTime.set(System.currentTimeMillis());
-            }
-
-            @Override
-            public void onThinkingToken(String token) {
-                System.out.print(token);
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-
-            @Override
-            public void onContentStart() {
-                long thinkingEndTime = System.currentTimeMillis();
-                double thinkingDuration = (thinkingEndTime - thinkingStartTime.get()) / 1000.0;
-                System.out.printf(" \033[1;35m(%.1fs)\033[0m%n", thinkingDuration);
-                
-                printAssistantSeparator();
-                System.out.println();
-                replyStartTime.set(System.currentTimeMillis());
-            }
-
-            @Override
-            public void onContentToken(String token) {
-                System.out.print(token);
-                try {
-                    Thread.sleep(20);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-
-            @Override
-            public void onComplete(RealTimeStreamingService.StreamingResult result) {
-                long replyEndTime = System.currentTimeMillis();
-                if (replyStartTime.get() != null) {
-                    double replyDuration = (replyEndTime - replyStartTime.get()) / 1000.0;
-                    System.out.println();
-                }
-                latch.countDown();
-            }
-
-            @Override
-            public void onError(Throwable error) {
-                System.out.println("\n\033[1;31m流式输出出错: " + error.getMessage() + "\033[0m");
-                latch.countDown();
-            }
-        });
-
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+    private void streamThinkingAndReply(String thinkingContent, String replyContent, long thinkingDurationMs) {
+        System.out.print("\033[1;90m🤔 深度思考中... \033[0m");
+        System.out.print(thinkingContent);
+        System.out.printf(" \033[1;35m(%s)\033[0m%n", formatDuration(thinkingDurationMs));
+        printAssistantSeparator();
+        System.out.println();
+        System.out.println(replyContent);
     }
 
     private void simulateStreamingThinkingAndReply(String thinkingContent, String replyContent) {
-        System.out.print("\033[1;90m🤔 深度思考中... \033[0m");
-        long thinkingStartTime = System.currentTimeMillis();
-        
-        try {
-            for (char c : thinkingContent.toCharArray()) {
-                System.out.print(c);
-                Thread.sleep(30);
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        
-        long thinkingEndTime = System.currentTimeMillis();
-        double thinkingDuration = (thinkingEndTime - thinkingStartTime) / 1000.0;
-        System.out.printf(" \033[1;35m(%.1fs)\033[0m%n", thinkingDuration);
-
-        printAssistantSeparator();
-        System.out.println();
-
-        try {
-            for (char c : replyContent.toCharArray()) {
-                System.out.print(c);
-                Thread.sleep(40);
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        System.out.println();
+        streamThinkingAndReply(thinkingContent, replyContent, 0L);
     }
 
     private String generateAssistantReply(QuestionFormDTO form) {
@@ -386,21 +293,23 @@ public class ConsoleDialogueTest implements CommandLineRunner {
             System.out.println("  补充说明: " + supplement);
         }
 
-        String thinkingContent = "正在根据您提供的信息进行法律分析...正在检索相关的法律法规...正在查找相似的司法案例...";
-        
-        if (useRealStreaming && realTimeStreamingService != null) {
-            streamThinkingOnly(thinkingContent);
-        } else {
-            simulateStreamingThinking(thinkingContent);
-        }
-
+        long startAt = System.currentTimeMillis();
         MasterAgent.MasterAgentResult result = dialogueService.processUserAnswers(
                 currentContext.getSessionId(), answersMap, supplement);
+        long thinkingDurationMs = System.currentTimeMillis() - startAt;
 
         if (!result.getSuccess()) {
             System.out.println("\n\033[1;31m处理失败: " + result.getErrorMessage() + "\033[0m");
             return;
         }
+
+        String thinkingContent = result.getThinkingContent();
+        if (thinkingContent == null || thinkingContent.isEmpty()) {
+            thinkingContent = "正在根据您提供的信息进行法律分析...正在检索相关的法律法规...正在查找相似的司法案例...";
+        }
+        System.out.print("\033[1;90m🤔 深度思考中... \033[0m");
+        System.out.print(thinkingContent);
+        System.out.printf(" \033[1;35m(%s)\033[0m%n", formatDuration(thinkingDurationMs));
 
         if (result.getConclusion() != null) {
             displayConclusion(result.getConclusion());
@@ -439,15 +348,7 @@ public class ConsoleDialogueTest implements CommandLineRunner {
     private void simulateStreamingThinking(String thinkingContent) {
         System.out.print("\033[1;90m🤔 深度思考中... \033[0m");
         long startTime = System.currentTimeMillis();
-        
-        try {
-            for (char c : thinkingContent.toCharArray()) {
-                System.out.print(c);
-                Thread.sleep(30);
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        System.out.print(thinkingContent);
         
         long endTime = System.currentTimeMillis();
         double duration = (endTime - startTime) / 1000.0;
@@ -554,16 +455,7 @@ public class ConsoleDialogueTest implements CommandLineRunner {
         if (content == null || content.isEmpty()) {
             return;
         }
-        try {
-            for (char c : content.toCharArray()) {
-                System.out.print(c);
-                Thread.sleep(40);
-            }
-            System.out.println();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            System.out.println(content);
-        }
+        System.out.println(content);
     }
 
     private void printIndentedText(String content, int indent) {
@@ -583,4 +475,12 @@ public class ConsoleDialogueTest implements CommandLineRunner {
         System.out.println("\033[1;32m🤖 法律助手\033[0m");
         System.out.println("\033[1;32m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m");
     }
+
+    private String formatDuration(long durationMs) {
+        if (durationMs < 1000) {
+            return durationMs + "ms";
+        }
+        return String.format("%.1fs", durationMs / 1000.0);
+    }
+
 }

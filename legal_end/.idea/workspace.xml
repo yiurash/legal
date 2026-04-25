@@ -4,11 +4,86 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5e370f6e-e91c-47d3-bdbc-3df96c91dc93" name="更改" comment="" />
+    <list default="true" id="5e370f6e-e91c-47d3-bdbc-3df96c91dc93" name="更改" comment="">
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/FeldsherAiConsoleTestApplication.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/service/ConclusionGenerationService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/service/PromptProvider.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/context/DialogueContext.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/dto/CaseFactsDTO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/dto/IntentionResultDTO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/dto/QuestionFormDTO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/dto/UserAnswerDTO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/entity/DialogueMessage.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/entity/DialogueSession.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/enums/AgentTypeEnum.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/enums/CaseTypeEnum.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/enums/DialogueStatusEnum.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/enums/SkillTypeEnum.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/request/DialogueRequest.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/result/Result.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/vo/CaseRetrievalVO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/vo/DialogueResponseVO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/common/vo/LawRetrievalVO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/resources/application-console-test.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/resources/prompts/tools/conclusion_generation.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/resources/prompts/tools/other_case_search.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/resources/prompts/tools/other_law_search.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/resources/prompts/tools/other_question_generation.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/src/main/resources/prompts/tools/skill_classifier.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/target/classes/application-console-test.yml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/target/classes/prompts/tools/conclusion_generation.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/target/classes/prompts/tools/other_case_search.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/target/classes/prompts/tools/other_law_search.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/target/classes/prompts/tools/other_question_generation.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/target/classes/prompts/tools/skill_classifier.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/feldsher-ai/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../知识库/劳动合同纠纷_知识库.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../知识库/民间借贷纠纷_知识库.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../知识库/离婚纠纷_知识库.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/jarRepositories.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/jarRepositories.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-ai/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/feldsher-ai/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/agents/MasterAgent.java" beforeDir="false" afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/agents/MasterAgent.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/service/LLMDialogueService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/test/ConsoleDialogueTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/test/ConsoleDialogueTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/test/LLMDialogueTest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/tools/AskUserQuestionTool.java" beforeDir="false" afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/tools/AskUserQuestionTool.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/tools/CaseSearchTool.java" beforeDir="false" afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/tools/CaseSearchTool.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/tools/LawSearchTool.java" beforeDir="false" afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/tools/LawSearchTool.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/tools/SkillSelectorTool.java" beforeDir="false" afterPath="$PROJECT_DIR$/feldsher-ai/src/main/java/com/feldsher/ai/tools/SkillSelectorTool.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-ai/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/feldsher-ai/src/main/resources/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-ai/target/classes/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/feldsher-ai/target/classes/application.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/pom.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/context/DialogueContext.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/dto/CaseFactsDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/dto/IntentionResultDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/dto/QuestionFormDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/dto/UserAnswerDTO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/entity/DialogueMessage.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/entity/DialogueSession.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/enums/AgentTypeEnum.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/enums/CaseTypeEnum.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/enums/DialogueStatusEnum.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/enums/SkillTypeEnum.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/request/DialogueRequest.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/result/Result.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/vo/CaseRetrievalVO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/vo/DialogueResponseVO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/src/main/java/com/feldsher/common/vo/LawRetrievalVO.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/feldsher-common/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="66" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
@@ -28,10 +103,15 @@
   <component name="MavenImportPreferences">
     <option name="generalSettings">
       <MavenGeneralSettings>
-        <option name="localRepository" value="C:\Users\Administrator\.m2\repository" />
-        <option name="userSettingsFile" value="C:\Users\Administrator\.m2\settings.xml" />
+        <option name="customMavenHome" value="D:/YAO/temp/apache-maven-3.6.3-legal" />
+        <option name="mavenHomeTypeForPersistence" value="CUSTOM" />
+        <option name="userSettingsFile" value="D:\YAO\temp\apache-maven-3.6.3-legal\conf\settings.xml" />
       </MavenGeneralSettings>
     </option>
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6,
@@ -51,16 +131,26 @@
     "RequestMappingsPanelOrder1": "1",
     "RequestMappingsPanelWidth0": "75",
     "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.MCP Project settings loaded": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "Spring Boot.FeldsherAiApplication.executor": "Run",
+    "Spring Boot.FeldsherAiConsoleTestApplication.executor": "Run",
     "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "git-widget-placeholder": "dev-v1",
+    "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "F:/ai-workspace/solo code/20260423/legal/legal_end/pom.xml",
+    "last_opened_file_path": "E:/workspace-260324/github/legal/legal_end/pom.xml",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "settings.editor.selected.configurable": "MavenSettings",
+    "to.speed.mode.migration.done": "true",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -69,7 +159,7 @@
       <command value="mvn clean compile -U" />
     </option>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Spring Boot.FeldsherAiConsoleTestApplication">
     <configuration name="FeldsherAiApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <module name="feldsher-ai" />
       <option name="SPRING_BOOT_MAIN_CLASS" value="com.feldsher.ai.FeldsherAiApplication" />
@@ -77,6 +167,24 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="FeldsherAiConsoleTestApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
+      <module name="feldsher-ai" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.feldsher.ai.FeldsherAiConsoleTestApplication" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.feldsher.ai.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Spring Boot.FeldsherAiConsoleTestApplication" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="默认任务">
@@ -90,6 +198,7 @@
       <workItem from="1776965470521" duration="476000" />
       <workItem from="1776965968292" duration="312000" />
       <workItem from="1776966303898" duration="1373000" />
+      <workItem from="1777095789807" duration="8256000" />
     </task>
     <servers />
   </component>

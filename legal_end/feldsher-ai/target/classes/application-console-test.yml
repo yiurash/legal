@@ -1,0 +1,12 @@
+spring:
+  main:
+    web-application-type: none
+
+logging:
+  level:
+    root: warn
+    com.feldsher: warn
+    com.feldsher.ai.test: info
+    com.feldsher.ai.service: warn
+    dev.langchain4j: warn
+    dev.langchain4j.http.client.log.LoggingHttpClient: off

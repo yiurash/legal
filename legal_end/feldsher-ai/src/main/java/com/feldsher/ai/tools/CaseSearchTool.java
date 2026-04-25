@@ -1,5 +1,10 @@
 package com.feldsher.ai.tools;
 
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+import com.feldsher.ai.service.PromptProvider;
+import com.feldsher.ai.service.RealTimeStreamingService;
 import com.feldsher.common.vo.CaseRetrievalVO;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
@@ -7,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +23,13 @@ import java.util.List;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class CaseSearchTool {
+
+    private static final String PROMPT_KEY = "tools/other_case_search";
+
+    private final RealTimeStreamingService realTimeStreamingService;
+    private final PromptProvider promptProvider;
 
     @Tool("根据案情事实和争议焦点，检索相似的司法案例")
     public CaseSearchResult searchCases(
@@ -66,10 +78,78 @@ public class CaseSearchTool {
                 cases = generateContractDisputeCases(caseFacts);
                 break;
             default:
-                cases = generateGeneralCases(caseFacts);
+                cases = generateGeneralCasesByLlm(caseFacts);
         }
 
         return cases;
+    }
+
+    private List<CaseRetrievalVO> generateGeneralCasesByLlm(String caseFacts) {
+        String systemPrompt = promptProvider.getPrompt(PROMPT_KEY, defaultPrompt());
+
+        long start = System.currentTimeMillis();
+        RealTimeStreamingService.StreamingResult llmResult =
+                realTimeStreamingService.chatSync(systemPrompt, "案情事实: " + caseFacts);
+        long duration = System.currentTimeMillis() - start;
+        int outputLen = llmResult != null && llmResult.getResponseContent() != null ? llmResult.getResponseContent().length() : 0;
+        log.info("LLM案例检索完成。prompt_key={}, duration_ms={}, output_len={}", PROMPT_KEY, duration, outputLen);
+        if (llmResult == null || !llmResult.isSuccess()) {
+            log.warn("LLM案例检索失败，回退到通用模板。prompt_key={}", PROMPT_KEY);
+            return generateGeneralCases(caseFacts);
+        }
+
+        try {
+            String jsonText = extractJson(llmResult.getResponseContent());
+            if (jsonText == null) {
+                return generateGeneralCases(caseFacts);
+            }
+            JSONObject root = JSON.parseObject(jsonText);
+            JSONArray caseArray = root.getJSONArray("cases");
+            if (caseArray == null || caseArray.isEmpty()) {
+                return generateGeneralCases(caseFacts);
+            }
+
+            List<CaseRetrievalVO> cases = new ArrayList<>();
+            for (int i = 0; i < caseArray.size(); i++) {
+                JSONObject item = caseArray.getJSONObject(i);
+                LocalDate judgmentDate = parseDate(item.getString("judgmentDate"));
+                JSONArray disputeFocusArr = item.getJSONArray("disputeFocus");
+                JSONArray takeawaysArr = item.getJSONArray("keyTakeaways");
+                cases.add(CaseRetrievalVO.builder()
+                        .caseId("LLM_CASE_" + (i + 1))
+                        .caseName(item.getString("caseName"))
+                        .court(item.getString("court"))
+                        .caseNumber(item.getString("caseNumber"))
+                        .judgmentDate(judgmentDate == null ? LocalDate.now().minusDays(i + 1) : judgmentDate)
+                        .caseType(item.getString("caseType"))
+                        .basicFacts(item.getString("basicFacts"))
+                        .disputeFocus(disputeFocusArr == null ? List.of() : disputeFocusArr.toJavaList(String.class))
+                        .courtFinding(item.getString("courtFinding"))
+                        .judgmentResult(item.getString("judgmentResult"))
+                        .relevanceScore(item.getDouble("relevanceScore"))
+                        .relevanceAnalysis(item.getString("relevanceAnalysis"))
+                        .keyTakeaways(takeawaysArr == null ? List.of() : takeawaysArr.toJavaList(String.class))
+                        .build());
+            }
+            return cases.isEmpty() ? generateGeneralCases(caseFacts) : cases;
+        } catch (Exception e) {
+            log.warn("LLM案例检索解析失败，回退到通用模板: {}", e.getMessage());
+            return generateGeneralCases(caseFacts);
+        }
+    }
+
+    private String defaultPrompt() {
+        return """
+返回JSON: {"cases":[{"caseName":"案例名称","court":"法院"}]}。
+""";
+    }
+
+    private LocalDate parseDate(String text) {
+        try {
+            return text == null || text.isBlank() ? null : LocalDate.parse(text);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private List<CaseRetrievalVO> generateMarriageFamilyCases(String caseFacts) {
@@ -142,6 +222,18 @@ public class CaseSearchTool {
                 .build());
 
         return cases;
+    }
+
+    private String extractJson(String text) {
+        if (text == null) {
+            return null;
+        }
+        int start = text.indexOf("{");
+        int end = text.lastIndexOf("}");
+        if (start >= 0 && end > start) {
+            return text.substring(start, end + 1);
+        }
+        return null;
     }
 
     private List<CaseRetrievalVO> generateLaborDisputeCases(String caseFacts) {
